@@ -1,0 +1,273 @@
+#include<stdio.h>
+#include<limits.h>
+#include<stdbool.h>
+#include<stdlib.h>
+
+#define MAX_LENGHT 100
+#define ERR 13
+#define MAX_CHARACTER 126
+#define MIN_CHARACTER 32
+
+
+typedef struct Stats
+{
+    int sum;
+    int min;
+    int number;    
+    int symbols[MAX_CHARACTER];
+} Stats;
+
+
+void printLine(char line[MAX_LENGHT])
+{
+    for (int i = 0; line[i] != '\0'; i++)
+    {
+        printf("%c", line[i]);
+    }
+    printf("\n");
+}
+
+
+bool compareCharArrays(char cArr1[], char cArr2[], int lenght)
+{
+    for (int i = 0; i < lenght; i++)
+    {
+        if (cArr1[i] != cArr2[i]) return false;
+    }
+    return true;
+}
+
+
+int getLength(char line[])
+{
+    int lenght = 1; // zacinan na 1 kvoli termnacnej podmienke
+    for (int i = 0; line[i] != '\0'; i++) lenght++;
+    return lenght;
+}
+
+
+
+char * manageInput(char character, char line[])
+{
+    int i = 0;
+    int ord = character;
+    while ((ord != ERR) && (i < MAX_LENGHT - 1))
+    {    
+        line[i] = character;
+        character = getchar();
+        ord = character;
+        i++;
+    }
+    if ((i > 0) && (i < MAX_LENGHT - 1)) line[i] = '\0';
+    else if (i == MAX_LENGHT - 1)
+    {
+        while ((character != ERR) && (character != EOF))
+        {   
+            character = getchar();
+        }
+        return NULL;
+
+        // stale neviem preco to funguje
+        // z hesiel ktore su nevalidne nerobim statistiku I guess
+    }
+    else return NULL;
+
+    char * cptr = line; 
+    return cptr;
+}
+
+
+bool firstCondition(char line[], int lenght)
+{
+    bool small = false; 
+    bool big = false;
+
+    for (int i = 0; i < lenght; i++)
+    {
+        int ord = (int)line[i];
+        if ((ord >= 'A') && (ord <= 'Z')) big = true;
+        else if ((ord >= 'a') && (ord <= 'z')) small = true;
+        
+        if ((small == true) && (big == true)) 
+        {
+            return true;
+        }
+    };
+    return false;    
+}
+
+
+bool secondCondition(int param, char line[], int lenght)
+{
+    bool small = false;
+    bool big = false;
+    bool number = false;
+    bool special = false;
+
+    for (int i = 0; i < lenght; i++)
+    {
+        int ord = (int)line[i];
+        if ((ord >= 'A') && (ord <= 'Z')) big = true;
+        else if ((ord >= 'a') && (ord <= 'z')) small = true;
+        else if ((ord >= '0') && (ord <= '9')) number = true;
+        else if ((ord >= ' ') && (ord <= '~')) special = true;
+    
+        int approved = (int)small + (int)big + (int)number + (int)special;
+        if (param <= 4)
+        {
+            if (approved >= param) return true;  
+        } 
+        if (param > 4)
+        {
+            if (approved == 4) return true;  
+        } 
+    }
+    return false; 
+}
+
+
+bool thirdCondition(int param, char line[], int lenght)
+{
+    int number = 1;
+    for (int i = 1; i < lenght; i++)
+    {
+        if (line[i-1] == line[i]) number++;
+        else if (number >= param) return false; 
+        else number = 1;
+    }
+    return true;
+}
+
+
+bool fourthCondition(int param, char line[], int lenght)
+{
+    bool valid = false;
+    for (int i = 0; i < lenght; i++)
+    {
+        for (int j = 0; j < lenght; j += param)
+        {
+            // char a[3];
+            // char b[3];
+            for (int p = 0; p < param; p++)
+            {       
+                if ((line[i + p] == line[j + p]) && (j !=  i)) valid = true;
+                // a[p] += line[i + p];
+                //b[p] += line[j + p];
+            }
+            /*s
+            a[3] += '\0';
+            b[3] += '\0';
+
+            printLine(a);
+            printLine(b);
+            printf("\n");
+            */
+        }
+    }
+    return valid;
+}
+
+
+bool checkPassword(int level, int param, char line[], int lenght)
+{
+    bool valid = false;
+
+    if (level == 1)
+    {
+        if (firstCondition(line, lenght)) valid = true;   
+    }
+    else if (level == 2)
+    {
+        if ((firstCondition(line, lenght)) && (secondCondition(param, line, lenght))) valid = true;
+    }
+    else if (level == 3)
+    {
+        if ((firstCondition(line, lenght)) && (secondCondition(param, line, lenght)) && (thirdCondition(param, line, lenght))) valid = true;
+    }
+    else if (level == 4)
+    {
+        if ((firstCondition(line, lenght)) && (secondCondition(param, line, lenght)) && (thirdCondition(param, line, lenght)) && (fourthCondition(param, line, lenght))) valid = true;
+    }
+
+    return valid;
+}
+
+
+struct Stats updateStats(Stats stats, char line[], int lenght)
+{
+    int ord;
+    for (int i = 0; i < lenght; i++)
+    {
+        ord = (int)line[i];
+        if ((stats.symbols[ord] == 0) && (ord >= ' ') && (ord <= '~')) stats.symbols[ord]++;
+    }
+    if (lenght < stats.min) stats.min = lenght - 1;
+    stats.sum += (lenght - 1);
+    stats.number++;
+    return stats;
+}
+
+
+struct Stats prepareStats(Stats stats)
+{
+    stats.min = MAX_LENGHT;
+    stats.number = 0;
+    stats.sum = 0;
+    for (int i = 0; i < MAX_CHARACTER; i++) stats.symbols[i] = 0;
+    return stats;
+}
+
+
+void printStats(Stats stats)
+{
+    int sum_symbols = 0;
+    float priemer = (float)stats.sum / (float)stats.number;
+
+    for (int i = 0; i < MAX_CHARACTER; i++) sum_symbols += stats.symbols[i];
+
+    printf("Statistiky:\n");
+    printf("Roznych znakov: %i\n", sum_symbols);
+    printf("Minimalna dlzka: %i\n", stats.min);
+    printf("Priemerna dlzka %.1f\n", priemer);
+}
+
+
+int main(int argc, char *argv[])
+{
+    int number = argc;
+    int level = atoi(argv[1]);
+    int param = atoi(argv[2]);
+
+    Stats stats;
+    // nova funkcia na riesenie argv[]
+
+    if (number >= 4)
+    {
+        if (compareCharArrays(argv[3], "--stats", 7))
+        {
+            stats = prepareStats(stats);
+        }
+    }
+
+    char character;
+    character = getchar();
+
+    // stats vynulovanie
+ 
+    while ((character != EOF))
+    {
+        char line[MAX_LENGHT];
+        char * lineptr = manageInput(character, line);
+
+        if (lineptr != NULL) 
+        {
+            int lenght = getLength(line);
+            stats = updateStats(stats, line, lenght); // z nevalidneho hesla treba spravit statistiku, aj nad 100?
+            if (checkPassword(level, param, line, lenght)) printf("%s\n", lineptr);
+        }
+        character = getchar();
+    }
+
+    if (number >= 4) printStats(stats);
+    return 0;
+}
